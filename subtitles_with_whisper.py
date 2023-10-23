@@ -31,6 +31,7 @@ def transcribe_audio(input_audio_path: str):
         language="en",
         word_timestamps=True,
         task="transcribe",
+        # verbose=True
     )
 
     word_options = {"highlight_words": False, "max_line_count": 1, "max_line_width": 55}
@@ -58,6 +59,12 @@ def merge_mp4_and_sub_to_mkv(input_video_path: str):
 
 
 
+def print_time_interval(start_time):
+    duration_in_seconds = time() - start_time
+    only_minutes = math.floor(duration_in_seconds // 60)
+    only_seconds = math.floor(duration_in_seconds % 60)
+    print(f"durration: {only_minutes} min {only_seconds} sec")
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python subtitles_with_whisper.py <filename>")
@@ -69,8 +76,4 @@ if __name__ == "__main__":
     transcribe_audio(audio_path)
     # merge_mp4_and_sub_to_mkv(video_filename)
 
-    # convert_srt_to_vtt(srt_path)
-    duration_in_seconds = time() - start_time
-    only_minutes = math.floor(duration_in_seconds // 60)
-    only_seconds = math.floor(duration_in_seconds % 60)
-    print(f"durration: {only_minutes} min {only_seconds} sec")
+    print_time_interval(start_time)
