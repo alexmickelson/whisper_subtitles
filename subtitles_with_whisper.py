@@ -1,5 +1,6 @@
 from datetime import timedelta
 import math
+import os
 import subprocess
 import sys
 from time import time
@@ -38,8 +39,11 @@ def transcribe_audio(input_audio_path: str):
     vtt_writer = get_writer(output_format="vtt", output_dir="./media")
     vtt_writer(transcribe, input_audio_path, word_options)  # type: ignore
 
-    srt_writer = get_writer(output_format="srt", output_dir="./media")
-    srt_writer(transcribe, input_audio_path, word_options)  # type: ignore
+    # srt_writer = get_writer(output_format="srt", output_dir="./media")
+    # srt_writer(transcribe, input_audio_path, word_options)  # type: ignore
+
+    os.remove(input_audio_path)
+    
 
 def merge_mp4_and_sub_to_mkv(input_video_path: str):
     print("making merged mkv with subtitles")
@@ -59,21 +63,55 @@ def merge_mp4_and_sub_to_mkv(input_video_path: str):
 
 
 
-def print_time_interval(start_time):
+def print_time_interval(video_filename: str, start_time: float):
     duration_in_seconds = time() - start_time
     only_minutes = math.floor(duration_in_seconds // 60)
     only_seconds = math.floor(duration_in_seconds % 60)
-    print(f"durration: {only_minutes} min {only_seconds} sec")
+    print(f"{video_filename} - durration: {only_minutes} min {only_seconds} sec")
+
+def generate_subtitles(video_filename: str):
+    start_time = time()
+    audio_path = extract_audio(video_filename)
+    transcribe_audio(audio_path)
+    # merge_mp4_and_sub_to_mkv(video_filename)
+    print_time_interval(video_filename, start_time)
+
+
+def convert_mkv_to_mp4(directory):
+    for filename in os.listdir(directory):
+        if filename.endswith(".mkv"):
+            mp4_filename = f"{filename[:-4]}.mp4"
+            mp4_filepath = os.path.join(directory, mp4_filename)
+
+            if not os.path.exists(mp4_filepath):
+                mkv_filepath = os.path.join(directory, filename)
+
+                command = f"ffmpeg -i \"{mkv_filepath}\" \"{mp4_filepath}\""
+                subprocess.run(command, shell=True)
+                print(f"Converted {filename} to {mp4_filename}")
+            else:
+                print(f"{mp4_filename} already exists. Skipping mp4 conversion")
+
+
+def generate_subtitles_for_directory(directory):
+    for filename in os.listdir(directory):
+        if filename.endswith(".mp4"):
+            subtitle_filename = f"{filename[:-4]}.vtt"
+            subtitle_filepath = os.path.join(directory, subtitle_filename)
+
+            if not os.path.exists(subtitle_filepath):
+                video_path = os.path.join(directory, filename)
+                generate_subtitles(video_path)
+            else:
+                print(f"{subtitle_filename} already exists. Skipping subtitles")
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python subtitles_with_whisper.py <filename>")
         sys.exit(1)
 
-    video_filename = sys.argv[1]
-    start_time = time()
-    audio_path = extract_audio(video_filename)
-    transcribe_audio(audio_path)
-    # merge_mp4_and_sub_to_mkv(video_filename)
-
-    print_time_interval(start_time)
+    directory = sys.argv[1]
+    convert_mkv_to_mp4(directory)
+    generate_subtitles_for_directory(directory)
+    
